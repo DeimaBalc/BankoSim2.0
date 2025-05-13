@@ -7,17 +7,8 @@
 
 #include <fstream>
 
-Admin::Admin(const std::string& id, const std::string& slaptazodis) : id(id), slaptazodis(slaptazodis) {};
+#include "admin.h"
 
-std::string Admin::getId() const {
-    return id;
-}
+Admin::Admin(const std::string& id) : id(id) {}
 
-std::string Admin::getSlapt() const {
-    return slaptazodis;
-}
-
-void Admin::setSlapt(const std::string& naujasSlaptazodis) {
-    slaptazodis = naujasSlaptazodis;
-}
 

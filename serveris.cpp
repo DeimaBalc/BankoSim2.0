@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <string>
 #include <filesystem>
+#include "admin.h" // Corrected include for user-defined header
+#include "AuthScreen.h" // Corrected include for user-defined header
 #include <thread> // Added for threading
 #include <algorithm> // Added for std::all_of
 
@@ -42,14 +44,22 @@ void valdykKlienta(int klientoSoketas) {
                 continue;
             }else {
 
-                pranesimas = "ATSIJUNGTA, aciu, kad naudojote VU BANKA\n";
-                send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
-
                 pasirinkimas = std::stoi(atsakymas);
 
             }
 
+            Admin admin("11112222");
+
+            AuthScreen authScreen;
+
+            bool arTas = authScreen.authAdmin(admin, klientoSoketas);
+
+            std::cout << arTas << std::endl;
+
         }
+
+    
+
     } catch (const std::exception& e) {
         std::cerr << "Klaida tvarkant klientą: " << e.what() << std::endl;
         std::string klaida = "Įvyko klaida: " + std::string(e.what()) + "\n";
