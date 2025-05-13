@@ -7,8 +7,7 @@
 
 #include <fstream>
 
-#include "admin.h"
-
-Admin::Admin(const std::string& id) : id(id) {}
+// Default constructor definition
+Admin::Admin() : id("00000000") {} // Default ID set to "00000000
 
 

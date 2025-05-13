@@ -9,7 +9,8 @@ private:
     std::string id; // Administratoriaus ID
 
 public:
-    Admin(const std::string& id); // Constructor declaration
+    Admin(); // Default constructor declaration
+    Admin(const std::string& id): id(id) {}; // Constructor declaration
 
     std::string getId() const { return id; } // Gauti ID
 };

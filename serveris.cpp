@@ -48,13 +48,11 @@ void valdykKlienta(int klientoSoketas) {
 
             }
 
-            Admin admin("11112222");
+            Admin admin;
 
             AuthScreen authScreen;
 
-            bool arTas = authScreen.authAdmin(admin, klientoSoketas);
-
-            std::cout << arTas << std::endl;
+            admin = authScreen.registerAdmin(klientoSoketas);
 
         }
 
