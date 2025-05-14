@@ -27,6 +27,6 @@ public:
 };
 
 //std::ostream operator<<(std::ostream& os, const Admin admin);
-//labas
+
 
 #endif // ADMIN_H
