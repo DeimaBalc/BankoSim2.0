@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 class Admin {
 private:
@@ -13,6 +14,18 @@ public:
     Admin(const std::string& id): id(id) {}; // Constructor declaration
 
     std::string getId() const { return id; } // Gauti ID
+
+    void setId(std::string newId) {this->id = newId;}
+
+    std::string to_string() const {
+
+        return "Administratoriaus ID: " + id;
+
+    } // Gauti ID kaip string
+   
+
 };
+
+//std::ostream operator<<(std::ostream& os, const Admin admin);
 
 #endif // ADMIN_H

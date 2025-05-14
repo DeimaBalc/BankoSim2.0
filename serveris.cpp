@@ -16,8 +16,8 @@ void valdykAdmin(int klientoSoketas) {
     
     int pasirinkimas = 0;
     // Create an Admin object
-    Admin admin;
 
+    Admin admin;
     // Create an AuthScreen object
     AuthScreen authScreen;
 
@@ -25,7 +25,7 @@ void valdykAdmin(int klientoSoketas) {
     {
         while (!pasirinkimas) {
             std::string pranesimas = (
-                "\n\n*** VU BANKAS ***\n\n"
+                "\n\n*** ADMINISTRATORIUS ***\n\n"
                 "1. PRISIJUNGTI\n"
                 "2. REGISTRUOTIS\n\n"
                 "Pasirinkite veiksmą (1-2)"
@@ -39,7 +39,7 @@ void valdykAdmin(int klientoSoketas) {
                 throw std::runtime_error("Nepavyko gauti atsakymo iš kliento.");
             }
 
-            buffer[bytesRead] = '\0'; // Null-terminate the string
+            buffer[bytesRead] = '\0'; 
             std::string atsakymas(buffer);
 
             // Check if the response is valid
@@ -61,7 +61,9 @@ void valdykAdmin(int klientoSoketas) {
             // Prisijungti
             std::string pranesimas = "Pasirinkote prisijungti.\n";
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+
             bool isAuthenticated = authScreen.authAdmin(admin, klientoSoketas);
+
             if (isAuthenticated) {
                 std::string successMessage = "Administratoriaus autentifikacija sėkminga.\n";
                 send(klientoSoketas, successMessage.c_str(), successMessage.size(), 0);
@@ -73,9 +75,9 @@ void valdykAdmin(int klientoSoketas) {
             }
         } else if (pasirinkimas == 2) {
             // Registruotis
-            std::string pranesimas = "Pasirinkote registruotis.\n";
-            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
-            // Handle registration logic here
+            admin = authScreen.registerAdmin(klientoSoketas);
+
+            std::cout << admin.to_string() << std::endl;
         }
 
 
@@ -88,15 +90,6 @@ void valdykAdmin(int klientoSoketas) {
     }
     
 
-    // Authenticate the admin
-    if (authScreen.authAdmin(admin, klientoSoketas)) {
-        std::string successMessage = "Administratoriaus autentifikacija sėkminga.\n";
-        send(klientoSoketas, successMessage.c_str(), successMessage.size(), 0);
-        // Handle admin logic here
-    } else {
-        std::string failureMessage = "Administratoriaus autentifikacija nesėkminga.\n";
-        send(klientoSoketas, failureMessage.c_str(), failureMessage.size(), 0);
-    }
 }
 
 void valdykKlienta(int klientoSoketas) {
@@ -104,7 +97,7 @@ void valdykKlienta(int klientoSoketas) {
     bool atsijungti = false;
 
     try {
-
+        //vartotojas renkasi ka daryti
         while (!pasirinkimas) {
             std::string pranesimas = (
                 "\n\n*** VU BANKAS ***\n\n"
@@ -121,7 +114,8 @@ void valdykKlienta(int klientoSoketas) {
             if (bytesRead <= 0) {
                 throw std::runtime_error("Nepavyko gauti atsakymo iš kliento.");
             }
-
+            
+            //Gautas atsakymas tikrinamas
             buffer[bytesRead] = '\0'; // Null-terminate the string
             std::string atsakymas(buffer);
 
@@ -136,9 +130,10 @@ void valdykKlienta(int klientoSoketas) {
                 pasirinkimas = std::stoi(atsakymas);
 
             }
-
             
         }
+
+        //realizuojami variantai
         if(pasirinkimas == 1 || pasirinkimas == 2){
 
             while(!atsijungti){
@@ -153,23 +148,14 @@ void valdykKlienta(int klientoSoketas) {
                     std::string pranesimas = "Pasirinkote registruotis.\n";
                     send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
                     // Handle registration logic here
-                } else if (pasirinkimas == 3) {
-                    // Administratorius
-                    std::string pranesimas = "Pasirinkote administratorių.\n";
-                    send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
-                    valdykAdmin(klientoSoketas);
-
-                    std::string pranesimas = "Atsijungta.\n";
-                    send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
-                    std::cout << "klientas atsijungė" << std::endl;
-                }
+                } 
 
             }
-            
+
         } else { 
-            // valdykAdmin(klientoSoketas)
+            //jei pasirinktas adminas, paleidziamas kitas ekranas
             valdykAdmin(klientoSoketas);
-            
+            //sugrizus is admino, atsijungiama nuo soketo
             std::string pranesimas = "ATSIJUNGTA: Sėkmingai atsijungta. Iki pasimatymo!\n\n";
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
         }

@@ -5,9 +5,5 @@
 #include <cassert>
 #include "admin.h"
 
-#include <fstream>
-
 // Default constructor definition
 Admin::Admin() : id("00000000") {} // Default ID set to "00000000
-
-

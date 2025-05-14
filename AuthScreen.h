@@ -21,15 +21,27 @@ public:
     AuthScreen(){};
 
     bool authAdmin(const Admin admin, int klientoSoketas) {
-        std::string adminId = admin.getId();
 
-        std::cout <<adminId << std::endl;
-        
-        std::string pranesimas = "Įveskite slaptažodį: ";
+        std::string pranesimas = "Įveskite ID ";
         send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
 
         char buffer[4096];
         ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+        if (bytesRead <= 0) {
+            std::cerr << "Nepavyko gauti atsakymo iš kliento." << std::endl;
+            return false;
+        }
+
+        buffer[bytesRead] = '\0'; 
+        std::string adminId(buffer);
+
+        std::cout <<adminId << std::endl;
+        
+        pranesimas = "Įveskite slaptažodį: ";
+        send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+
+        buffer[4096];
+        bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
         if (bytesRead <= 0) {
             std::cerr << "Nepavyko gauti atsakymo iš kliento." << std::endl;
             return false;
