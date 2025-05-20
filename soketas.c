@@ -43,7 +43,7 @@ int main() {
 
     
     while (1) {
-        printf(": ");
+        printf(" ");
         fgets(buferis, BUFERIO_DYDIS, stdin);
 
         // Nuvalome \n
@@ -52,11 +52,24 @@ int main() {
         if (strcmp(buferis, "exit") == 0)
             break;
 
-        send(soketas, buferis, strlen(buferis), 0);
+        if (send(soketas, buferis, strlen(buferis), 0) < 0) {
+            perror("Klaida siunčiant duomenis į serverį");
+            break;
+        }
+
         memset(buferis, 0, BUFERIO_DYDIS);
 
-        if (recv(soketas, buferis, BUFERIO_DYDIS, 0) > 0)
+        ssize_t received = recv(soketas, buferis, BUFERIO_DYDIS, 0);
+        if (received > 0) {
             printf("%s", buferis);
+        } else if (received == 0) {
+            printf("Serveris uždarė ryšį.\n");
+            break;
+        } else {
+            perror("Klaida gaunant duomenis iš serverio");
+            break;
+        }
+
         if (strncmp("ATSIJUNGTA", buferis, 10) == 0) 
             break;   
     }
