@@ -39,7 +39,7 @@ int main() {
     
     memset(buferis, 0, BUFERIO_DYDIS);
     if (recv(soketas, buferis, BUFERIO_DYDIS, 0) > 0)
-        printf("%s\n", buferis);
+        printf("%s", buferis);
 
     
     while (1) {
