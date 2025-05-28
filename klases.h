@@ -94,29 +94,20 @@ public:
 };
 
 class pridejimoEkr{
-
 public:
-
     pridejimoEkr(){};
-    
 
     Vaikas interact(const Tevas tevas, int klientoSoketas) {
-        // Placeholder for the pridejimoEkr functionality
-       
         srand(time(nullptr));
         std::string pranesimas;
         char buffer[4096];
         Vaikas vaikas(std::to_string(rand() % 90000 + 10000));
-
-        
-        
 
         pranesimas = "Įveskite vaiko vardą: ";
         if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
             perror("Klaida siunčiant duomenis");
             return vaikas;
         }
-
         ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
         if (bytesRead <= 0) {
             perror("Klaida gaunant duomenis");
@@ -124,19 +115,13 @@ public:
         }
         buffer[bytesRead] = '\0';
         std::string vaikoVardas(buffer);
+        vaikas.setVardas(vaikoVardas);
 
-        vaikas.setVardas(vaikoVardas); // Set the name in the Vaikas object
-
-
-        std::cout << "DEBUG: Vaiko vardas gautas: " << vaikoVardas << "\n"; // DEBUG
-
-        
         pranesimas = "Įveskite vaiko pavardę: ";
         if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
             perror("Klaida siunčiant duomenis");
             return vaikas;
         }
-
         bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
         if (bytesRead <= 0) {
             perror("Klaida gaunant duomenis");
@@ -144,15 +129,13 @@ public:
         }
         buffer[bytesRead] = '\0';
         std::string vaikoPavarde(buffer);
-
-        vaikas.setPavarde(vaikoPavarde); // Set the surname in the Vaikas object
+        vaikas.setPavarde(vaikoPavarde);
 
         pranesimas = "Sukurkite vaiko slaptažodį: ";
         if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
             perror("Klaida siunčiant duomenis");
             return  vaikas;
         }
-
         bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
         if (bytesRead <= 0) {
             perror("Klaida gaunant duomenis");
@@ -161,7 +144,7 @@ public:
         buffer[bytesRead] = '\0';
         std::string vaikosSlaptazodis(buffer);
 
-        std::string tevoDir = "./tevai/" + tevas.getId() + "/vaikai" + "/" + vaikas.getId();
+        std::string tevoDir = "./tevai/" + tevas.getId() + "/vaikai/" + vaikas.getId();
         std::string vaikoDir = "./vaikai/" + vaikas.getId();
 
         if (std::filesystem::exists(tevoDir)) {
@@ -169,20 +152,17 @@ public:
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
             return vaikas;
         }
-
         if (!std::filesystem::exists(tevoDir)) {
             if (!std::filesystem::create_directories(tevoDir)) {
                 send(klientoSoketas, "Nepavyko sukurti direktorijos.\n", 32, 0);
                 return vaikas;
             }
         }
-
         if (std::filesystem::exists(vaikoDir)) {
             pranesimas = "Failas su tokiu vaiko ID jau egzistuoja.\n";
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
             return vaikas;
         }
-        
         if (!std::filesystem::exists(vaikoDir)) {
             if (!std::filesystem::create_directories(vaikoDir)) {
                 send(klientoSoketas, "Nepavyko sukurti vaiko direktorijos.\n", 32, 0);
@@ -194,69 +174,47 @@ public:
         std::string kontrolinis_skaicius = std::to_string(rand() % 9000 + 1000);
         std::string banko_kodas = "7300";
         std::string unikalus_numeris = std::to_string(rand() % 90000000 + 10000000);
-        
         std::string bankoSaskaitosNumeris = salies_kodas + kontrolinis_skaicius + banko_kodas + unikalus_numeris;
+        vaikas.setBankoSas(bankoSaskaitosNumeris);
 
-        vaikas.setBankoSas(bankoSaskaitosNumeris); // Set the bank account number in the Vaikas object
-
-
+        // Only write asm_duom.txt in parent's directory
         std::ofstream vaikoFailPasTeva(tevoDir + "/asm_duom.txt");
-        std::ofstream vaikoSasPasTeva(tevoDir + "/" + vaikas.getBankoSas() + ".txt");
-        
         if (!vaikoFailPasTeva.is_open()) {
             send(klientoSoketas, "Nepavyko sukurti failo.\n", 26, 0);
             return vaikas;
         }
-
-        if (!vaikoSasPasTeva.is_open()) {
-            send(klientoSoketas, "Nepavyko sukurti failo.\n", 26, 0);
-            return vaikas;
-        }
-
-        
-        vaikoFailPasTeva << vaikosSlaptazodis << "\n"; // Write password to file
-        vaikoFailPasTeva << vaikoVardas << "\n"; // Write name to file
-        vaikoFailPasTeva << vaikoPavarde << "\n"; // Write surname to file
-        vaikoSasPasTeva << "0\n"; // Write bank account number to file
-
+        vaikoFailPasTeva << vaikosSlaptazodis << "\n";
+        vaikoFailPasTeva << vaikoVardas << "\n";
+        vaikoFailPasTeva << vaikoPavarde << "\n";
+        vaikoFailPasTeva << tevas.getId() << "\n";
         vaikoFailPasTeva.close();
-        vaikoSasPasTeva.close();
 
-        
-        // Check if file with the same name already exists
-       
+        // Write asm_duom.txt and bank account file in global vaikai dir
         std::ofstream vaikoFailPasVaika(vaikoDir + "/asm_duom.txt");
         std::ofstream vaikoSasPasVaika(vaikoDir + "/" + vaikas.getBankoSas() + ".txt");
-
-        if (!vaikoSasPasVaika.is_open()) {
-            send(klientoSoketas, "Nepavyko sukurti failo.(2)\n", 26, 0);
-            return vaikas;
-        }
-
         if (!vaikoFailPasVaika.is_open()) {
             send(klientoSoketas, "Nepavyko sukurti failo.(1)\n", 26, 0);
             return vaikas;
         }
-
-        vaikoFailPasVaika << vaikosSlaptazodis << "\n"; // Write password to file
-        vaikoFailPasVaika << vaikoVardas << "\n"; // Write name to file
-        vaikoFailPasVaika << vaikoPavarde << "\n"; // Write surname to file
-        vaikoSasPasVaika <<"0\n";
-
+        if (!vaikoSasPasVaika.is_open()) {
+            send(klientoSoketas, "Nepavyko sukurti failo.(2)\n", 26, 0);
+            return vaikas;
+        }
+        vaikoFailPasVaika << vaikosSlaptazodis << "\n";
+        vaikoFailPasVaika << vaikoVardas << "\n";
+        vaikoFailPasVaika << vaikoPavarde << "\n";
+        vaikoFailPasVaika << tevas.getId() << "\n";
+        vaikoSasPasVaika << "0\n";
         vaikoFailPasVaika.close();
         vaikoSasPasVaika.close();
 
         std::string successMessage = "Vaiko registracija sėkminga.\n";
-            if (send(klientoSoketas, successMessage.c_str(), successMessage.size(), 0) < 0) {
-                perror("Klaida siunčiant registracijos pranešimą");
-            }
-
-            send(klientoSoketas, ("Prisijungimo ID: " + vaikas.getId() + "\n" + "Vaiko banko s1skaita: " + vaikas.getBankoSas() + "/n").c_str(), 26, 0);
-
-
+        if (send(klientoSoketas, successMessage.c_str(), successMessage.size(), 0) < 0) {
+            perror("Klaida siunčiant registracijos pranešimą");
+        }
+        send(klientoSoketas, ("Prisijungimo ID: " + vaikas.getId() + "\n" + "Vaiko banko s1skaita: " + vaikas.getBankoSas() + "/n").c_str(), 26, 0);
         return vaikas;
     }
-
 };
 class mokejimoKorteleEkr{
 
@@ -365,7 +323,239 @@ public:
 
 
 };
-class papildymoEkr{};
+class papildymoEkr{
+public:
+
+    papildymoEkr(){};
+
+    // Update balances in both parent and both child directories, add debug and success message
+    void updateBalansas(const std::string& tevoSasPath, double naujasTevoBalansas,
+                        const std::string& vaikoGlobalSasPath, double naujasVaikoBalansas,
+                        const std::string& vaikoPasTevaSasPath) {
+        std::cout << "DEBUG: updateBalansas called." << std::endl;
+        std::cout << "DEBUG: tevoSasPath = " << tevoSasPath << ", naujasTevoBalansas = " << std::fixed << std::setprecision(2) << naujasTevoBalansas << std::endl;
+        std::cout << "DEBUG: vaikoGlobalSasPath = " << vaikoGlobalSasPath << ", naujasVaikoBalansas = " << std::fixed << std::setprecision(2) << naujasVaikoBalansas << std::endl;
+        std::cout << "DEBUG: vaikoPasTevaSasPath = " << vaikoPasTevaSasPath << std::endl;
+
+        // Update parent's balance
+        std::ofstream tevoSasFile(tevoSasPath, std::ios::trunc);
+        if (tevoSasFile.is_open()) {
+            tevoSasFile << std::fixed << std::setprecision(2) << naujasTevoBalansas << "\n";
+            tevoSasFile.close();
+            std::cout << "DEBUG: Parent's balance updated successfully." << std::endl;
+        } else {
+            std::cout << "DEBUG: Failed to open parent's account file for writing: " << tevoSasPath << std::endl;
+        }
+        // Update child's balance in ./vaikai
+        std::ofstream vaikoGlobalSasFile(vaikoGlobalSasPath, std::ios::trunc);
+        if (vaikoGlobalSasFile.is_open()) {
+            vaikoGlobalSasFile << std::fixed << std::setprecision(2) << naujasVaikoBalansas << "\n";
+            vaikoGlobalSasFile.close();
+            std::cout << "DEBUG: Child's balance (./vaikai) updated successfully." << std::endl;
+        } else {
+            std::cout << "DEBUG: Failed to open child's account file for writing: " << vaikoGlobalSasPath << std::endl;
+        }
+        // Update child's balance in ./tevai/{tevasId}/vaikai/{vaikoId}
+        std::ofstream vaikoPasTevaSasFileStream(vaikoPasTevaSasPath, std::ios::trunc);
+        if (vaikoPasTevaSasFileStream.is_open()) {
+            vaikoPasTevaSasFileStream << std::fixed << std::setprecision(2) << naujasVaikoBalansas << "\n";
+            vaikoPasTevaSasFileStream.close();
+            std::cout << "DEBUG: Child's balance (pas teva) updated successfully." << std::endl;
+        } else {
+            std::cout << "DEBUG: Failed to open child's account file for writing (pas teva): " << vaikoPasTevaSasPath << std::endl;
+        }
+    }
+
+    void interact(const Tevas tevas, int klientoSoketas) {
+        std::string pranesimas;
+        char buffer[4096];
+        ssize_t bytesRead;
+
+        pranesimas = "Įveskite vaiko ID: "; // Changed from %veskite to Įveskite for consistency
+        if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
+            perror("Klaida siunčiant duomenis");
+            return;
+        }
+        bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+        if (bytesRead <= 0) {
+            perror("Klaida gaunant duomenis");
+            return;
+        }
+        buffer[bytesRead] = '\0';
+        std::string vaikoID(buffer);
+
+        std::string tevoVaikoDir = "./tevai/" + tevas.getId() + "/vaikai/" + vaikoID;
+        std::string vaikoGlobalDir = "./vaikai/" + vaikoID; // Renamed for clarity
+
+        if (!std::filesystem::exists(tevoVaikoDir)) {
+            pranesimas = "Vaikas su tokiu ID nerastas.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        std::string vaikoBankoSaskaitosNumeris = "Nerasta";
+        std::string vaikoBalansasValue;
+        bool vaikoBankoFileRastas = false;
+        std::string vaikoGlobalSasPath; // Path to child's bank file in ./vaikai/{vaikoID}
+        std::string vaikoPasTevaSasPath; // Path to child's bank file in ./tevai/{tevasID}/vaikai/{vaikoID}
+
+        // --- Step 1: Find child's account file and read balance from the global vaikai directory ---
+        if (std::filesystem::exists(vaikoGlobalDir) && std::filesystem::is_directory(vaikoGlobalDir)) {
+            for (const auto& fileEntry : std::filesystem::directory_iterator(vaikoGlobalDir)) {
+                if (!fileEntry.is_regular_file()) continue;
+                std::string filename = fileEntry.path().filename().string();
+                if (filename.find("LT") != std::string::npos && filename.length() > 4 && filename.rfind(".txt") == filename.length() - 4) {
+                    vaikoBankoSaskaitosNumeris = filename.substr(0, filename.length() - 4);
+                    vaikoGlobalSasPath = fileEntry.path().string();
+                    std::ifstream saskaitaFile(vaikoGlobalSasPath);
+                    if (saskaitaFile.is_open()) {
+                        if (std::getline(saskaitaFile, vaikoBalansasValue) && !vaikoBalansasValue.empty()) {
+                            // Balance read successfully
+                        } else {
+                            vaikoBalansasValue = "0.00"; // Default if file empty or balance not read
+                        }
+                        saskaitaFile.close();
+                        vaikoBankoFileRastas = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!vaikoBankoFileRastas) {
+            pranesimas = "Vaiko banko sąskaita nerasta arba nepavyko jos atidaryti.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        // --- Step 2: Find child's account file within the parent's directory ---
+        // This path is needed for updating the copy of the child's balance in the parent's structure
+        if (std::filesystem::exists(tevoVaikoDir) && std::filesystem::is_directory(tevoVaikoDir)) {
+            for (const auto& fileEntry : std::filesystem::directory_iterator(tevoVaikoDir)) {
+                if (!fileEntry.is_regular_file()) continue;
+                std::string filename = fileEntry.path().filename().string();
+                if (filename.find("LT") != std::string::npos && filename.length() > 4 && filename.rfind(".txt") == filename.length() - 4) {
+                    vaikoPasTevaSasPath = fileEntry.path().string();
+                    break; // Found the file
+                }
+            }
+        }
+        if (vaikoPasTevaSasPath.empty()) {
+            pranesimas = "Vaiko banko sąskaitos kopija tėvo kataloge nerasta.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        pranesimas = "Įveskite suma, kurią norite pridėti: ";
+        if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
+            perror("Klaida siunčiant duomenis");
+            return;
+        }
+        bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+        if (bytesRead <= 0) {
+            perror("Klaida gaunant duomenis");
+            return;
+        }
+        buffer[bytesRead] = '\0';
+        std::string sumaValue(buffer);
+        double suma;
+        try {
+            suma = std::stod(sumaValue);
+        } catch (const std::invalid_argument& e) {
+            pranesimas = "Neteisingas sumos formatas.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        } catch (const std::out_of_range& e) {
+            pranesimas = "Suma per didelė arba per maža.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        if (suma <= 0) {
+            pranesimas = "Negalima pridėti neigiamos arba nulio sumos.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        // --- Step 3: Find parent's account file and read parent's balance ---
+        std::string tevoSaskaitosNumeris = "Nerasta";
+        std::string tevoBalansasValue;
+        bool tevoBankoFileRastas = false;
+        std::string tevoSasPath;
+
+        std::string tevoRootDir = "./tevai/" + tevas.getId(); // Root directory for the parent
+        if (std::filesystem::exists(tevoRootDir) && std::filesystem::is_directory(tevoRootDir)) {
+            for (const auto& fileEntry : std::filesystem::directory_iterator(tevoRootDir)) {
+                if (!fileEntry.is_regular_file()) continue;
+                std::string filename = fileEntry.path().filename().string();
+                if (filename.find("LT") != std::string::npos && filename.length() > 4 && filename.rfind(".txt") == filename.length() - 4) {
+                    tevoSaskaitosNumeris = filename.substr(0, filename.length() - 4);
+                    tevoSasPath = fileEntry.path().string();
+                    std::ifstream saskaitaFile(tevoSasPath);
+                    if (saskaitaFile.is_open()) {
+                        if (std::getline(saskaitaFile, tevoBalansasValue) && !tevoBalansasValue.empty()) {
+                            // Balance read successfully
+                        } else {
+                            tevoBalansasValue = "0.00"; // Default if file empty
+                        }
+                        saskaitaFile.close();
+                        tevoBankoFileRastas = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!tevoBankoFileRastas) {
+            pranesimas = "Tėvo banko sąskaita nerasta arba nepavyko jos atidaryti.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        double tevoBalansas;
+        try {
+            tevoBalansas = std::stod(tevoBalansasValue);
+        } catch (const std::invalid_argument& e) {
+            pranesimas = "Klaida skaitant tėvo balansą.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        } catch (const std::out_of_range& e) {
+            pranesimas = "Tėvo balansas per didelis arba per maža.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        if (tevoBalansas < suma) {
+            pranesimas = "Nepakanka lėšų tėvo sąskaitoje.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        double vaikoBalansas;
+        try {
+            vaikoBalansas = std::stod(vaikoBalansasValue);
+        } catch (const std::invalid_argument& e) {
+            pranesimas = "Klaida skaitant vaiko balansą.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        } catch (const std::out_of_range& e) {
+            pranesimas = "Vaiko balansas per didelis arba per maža.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        double naujasVaikoBalansas = vaikoBalansas + suma;
+        double naujasTevoBalansas = tevoBalansas - suma;
+
+        // --- Step 4: Call the update function ---
+        updateBalansas(tevoSasPath, naujasTevoBalansas, vaikoGlobalSasPath, naujasVaikoBalansas, vaikoPasTevaSasPath);
+        
+        pranesimas = "Suma sėkmingai pridėta vaikui. Naujas vaiko balansas: " + std::to_string(naujasVaikoBalansas) + ", naujas tėvo balansas: " + std::to_string(naujasTevoBalansas) + "\n";
+        send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+
+        return;
+    }
+};
 class pasalinimoEkr{
 
 public:
@@ -425,58 +615,102 @@ public:
         std::string tevoVaikaiDir = "./tevai/" + tevas.getId() + "/vaikai";
         std::string pranesimas;
 
-        if (!std::filesystem::exists(tevoVaikaiDir)) {
-            pranesimas = "Direktorija nerasta.\n";
+        if (!std::filesystem::exists(tevoVaikaiDir) || !std::filesystem::is_directory(tevoVaikaiDir)) {
+            pranesimas = "Tėvo vaikų aplankas nerastas arba tai ne aplankas.\n";
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
             return;
         }
 
-        bool found = false;
-        for (const auto& entry : std::filesystem::directory_iterator(tevoVaikaiDir)) {
-            if (!entry.is_directory()) continue;
-            std::string vaikoId = entry.path().filename();
-            std::string asmDuomPath = entry.path().string() + "/asm_duom.txt";
-            std::ifstream duom(asmDuomPath);
-            if (!duom.is_open()) continue;
+        bool foundChildren = false;
+        for (const auto& vaikoDirEntry : std::filesystem::directory_iterator(tevoVaikaiDir)) {
+            if (!vaikoDirEntry.is_directory()) {
+                continue;
+            }
+            std::string vaikoId = vaikoDirEntry.path().filename().string();
+            std::string vaikoGlobalDir = "./vaikai/" + vaikoId;
 
-            std::string vardas, pavarde;
-        
-            std::getline(duom, vardas);
-            std::getline(duom, pavarde);
+            // Read personal data from asm_duom.txt in global vaikai dir
+            std::string asmDuomPath = vaikoGlobalDir + "/asm_duom.txt";
+            std::ifstream asmDuomFile(asmDuomPath);
+            std::string vardas = "Nenustatytas";
+            std::string pavarde = "Nenustatyta";
+            if (asmDuomFile.is_open()) {
+                std::string tempSlaptazodis;
+                std::getline(asmDuomFile, tempSlaptazodis);
+                std::getline(asmDuomFile, vardas);
+                std::getline(asmDuomFile, pavarde);
+                asmDuomFile.close();
+            }
 
-            // Try to find account and balance
-            std::string saskaitaInfo = "Sąskaita nerasta\n";
-            std::string vaikoSasDir = "./vaikai/" + vaikoId;
-            std::string vaikoSasPath = vaikoSasDir + "/asm_duom.txt";
-            std::string balansas = "Nerasta";
-
-            if (std::filesystem::exists(vaikoSasPath)) {
-                std::ifstream vaikoSas(vaikoSasPath);
-                std::string skip;
-                std::getline(vaikoSas, skip); // password
-                std::getline(vaikoSas, skip); // vardas
-                std::getline(vaikoSas, skip); // pavarde
-                if (std::getline(vaikoSas, balansas)) {
-                    saskaitaInfo = "Balansas: " + balansas + "\n";
-                } else {
-                    saskaitaInfo = "Balansas: nerastas\n";
+            // Find bank account file in global vaikai dir
+            std::string bankoSaskaitosNumeris = "Nerasta";
+            std::string balansasText = "Balansas nerastas";
+            bool bankoFileRastas = false;
+            if (std::filesystem::exists(vaikoGlobalDir) && std::filesystem::is_directory(vaikoGlobalDir)) {
+                for (const auto& fileEntry : std::filesystem::directory_iterator(vaikoGlobalDir)) {
+                    if (!fileEntry.is_regular_file()) continue;
+                    std::string filename = fileEntry.path().filename().string();
+                    if (filename.find("LT") != std::string::npos && filename.length() > 4 && filename.rfind(".txt") == filename.length() - 4) {
+                        bankoSaskaitosNumeris = filename.substr(0, filename.length() - 4);
+                        std::ifstream saskaitaFile(fileEntry.path().string());
+                        if (saskaitaFile.is_open()) {
+                            std::string balansasValue;
+                            if (std::getline(saskaitaFile, balansasValue) && !balansasValue.empty()) {
+                                balansasText = "Balansas: " + balansasValue;
+                            } else {
+                                balansasText = "Balansas: 0.00 (arba failas tuščias)";
+                            }
+                            saskaitaFile.close();
+                        } else {
+                            balansasText = "Nepavyko atidaryti banko sąskaitos failo.";
+                        }
+                        bankoFileRastas = true;
+                        break;
+                    }
                 }
+            }
+            if (!bankoFileRastas && bankoSaskaitosNumeris == "Nerasta") {
+                balansasText = "Banko sąskaita nerasta.";
+            }
+
+            // Taupyklė info (new structure: first line = status, second line = balance)
+            std::string taupykleInfo = "Taupyklė: nėra informacijos";
+            std::string taupyklePath = vaikoGlobalDir + "/taupyklė.txt";
+            std::ifstream taupykleFile(taupyklePath);
+            if (taupykleFile.is_open()) {
+                std::string taupykleStatus, taupykleBalansas;
+                if (std::getline(taupykleFile, taupykleStatus)) {
+                    if (std::getline(taupykleFile, taupykleBalansas)) {
+                        if (taupykleStatus == "0") {
+                            taupykleInfo = "Taupyklė: užrakinta, balansas: " + taupykleBalansas;
+                        } else if (taupykleStatus == "1") {
+                            taupykleInfo = "Taupyklė: atrakinta, balansas: " + taupykleBalansas;
+                        } else {
+                            taupykleInfo = "Taupyklė: būsena nežinoma, balansas: " + taupykleBalansas;
+                        }
+                    } else {
+                        taupykleInfo = "Taupyklė: klaida skaitant balansą";
+                    }
+                }
+                taupykleFile.close();
             }
 
             pranesimas += "Vaiko ID: " + vaikoId + "\n";
             pranesimas += "Vardas: " + vardas + "\n";
             pranesimas += "Pavardė: " + pavarde + "\n";
-            pranesimas += saskaitaInfo + "\n";
-            found = true;
+            pranesimas += "Banko sąskaitos numeris: " + bankoSaskaitosNumeris + "\n";
+            pranesimas += balansasText + "\n";
+            pranesimas += taupykleInfo + "\n\n";
+            foundChildren = true;
         }
 
-        if (!found) {
-            pranesimas = "Vaikų nėra.\n";
+        if (!foundChildren) {
+            pranesimas = "Šis tėvas vaikų neturi arba nepavyko nuskaityti jų duomenų.\n";
         }
-
         send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
     }
 };
+
 class veiklosEkr{};
 
 
@@ -486,6 +720,55 @@ class authScreen {
 
         authScreen(){};
         std::string pranesimas;
+
+        bool authVaikas(Vaikas& vaikas, int klientoSoketas) {
+            char buffer[4096];
+
+            if (send(klientoSoketas, "Įveskite ID ", 13, 0) < 0) {
+                perror("Klaida siunčiant duomenis");
+                return false;
+            }
+            ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+            if (bytesRead <= 0) {
+                perror("Klaida gaunant duomenis");
+                return false;
+            }
+            buffer[bytesRead] = '\0';
+            std::string vaikoId(buffer);
+            vaikas.setId(vaikoId); // Set the ID in the Vaikas object
+
+            if (send(klientoSoketas, "Įveskite slaptažodį: ", 23, 0) < 0) {
+                perror("Klaida siunčiant duomenis");
+                return false;
+            }
+            bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+            if (bytesRead <= 0) {
+                perror("Klaida gaunant duomenis");
+                return false;
+            }
+            buffer[bytesRead] = '\0';
+            std::string atsakymas(buffer);
+
+            std::string vaikoDir = "./vaikai/" + vaikoId + "/asm_duom.txt";
+            std::ifstream vaikoFailas(vaikoDir);
+
+            if (!vaikoFailas.is_open()) {
+                send(klientoSoketas, "Nepavyko atidaryti failo.\n", 26, 0);
+                return false;
+            }
+
+            std::string storedPassword;
+            std::getline(vaikoFailas, storedPassword);
+            vaikoFailas.close();
+
+            if (atsakymas == storedPassword) {
+                send(klientoSoketas, "Autentifikacija sėkminga.\n", 26, 0);
+                return true;
+            } else {
+                send(klientoSoketas, "Neteisingas slaptažodis.\n", 26, 0);
+                return false;
+            }
+        }
 
         bool authTevas(Tevas& tevas, int klientoSoketas) {
             char buffer[4096];
@@ -618,6 +901,9 @@ private:
     mokejimoKorteleEkr mokejimoKortEkr;
     pridejimoEkr vaikoPridejimoEkr;
     pasalinimoEkr vaikoPasalinimoEkr;
+    perziurosEkr perziurosEkranas;
+    papildymoEkr papildymoEkranas;
+    taupyklesEkr taupyklesEkranas;
 
 public:
 
@@ -682,12 +968,11 @@ public:
                     vaikoPasalinimoEkr.interact(tevas, klientoSoketas);
                     break;
                 case 4:
-                    // perziurosEkr.interact(klientoSoketas); // Uncomment and implement when ready
-                    send(klientoSoketas, "Funkcionalumas dar neįgyvendintas.\n", 36, 0);
+                    perziurosEkranas.interact(tevas, klientoSoketas); // Uncomment and implement when ready
                     break;
                 case 5:
-                    // papildymoEkr.interact(klientoSoketas); // Uncomment and implement when ready
-                    send(klientoSoketas, "Funkcionalumas dar neįgyvendintas.\n", 36, 0);
+                    papildymoEkranas.interact(tevas, klientoSoketas); // Uncomment and implement when ready
+                    
                     break;
                 case 6:
                     // veiklosEkr.interact(klientoSoketas); // Uncomment and implement when ready
@@ -809,20 +1094,436 @@ public:
 
 };
 
+class vaikoPervedimoEkr{};
+class likutisEkr{
+
+public:
+
+    likutisEkr(){};
+
+    void interact(const Vaikas& vaikas, int klientoSoketas) {
+        std::string pranesimas;
+
+        std::string vaikoDir = "./vaikai/" + vaikas.getId();
+        std::string bankoSasPath;
+
+        for (const auto& fileEntry : std::filesystem::directory_iterator(vaikoDir)) {
+            if (!fileEntry.is_regular_file()) {
+                continue; // Only process files
+            }
+
+            std::string filename = fileEntry.path().filename().string();
+            // Check if filename contains "LT" and ends with ".txt"
+            if (filename.find("LT") != std::string::npos && 
+                filename.length() > 4 && filename.rfind(".txt") == filename.length() - 4) {
+                
+                // Found a potential bank account file
+                bankoSasPath = fileEntry.path().string();
+                break; // Assuming one bank account file per child directory, take the first one found
+            }
+        }
+
+        if (bankoSasPath.empty()) {
+            pranesimas = "Banko sąskaita nerasta.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+        std::ifstream saskaitaFile(bankoSasPath);
+        if (!saskaitaFile.is_open()) {
+            pranesimas = "Nepavyko atidaryti banko sąskaitos failo.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+        std::string balansasValue;
+        if (std::getline(saskaitaFile, balansasValue) && !balansasValue.empty()) {
+            pranesimas = "Balansas: " + balansasValue + "\n";
+        } else {
+            pranesimas = "Balansas: 0.00 (arba failas tuščias)\n"; // Default if file empty or balance not read
+        }
+        saskaitaFile.close();
+        send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+        std::cout << "DEBUG: Sent balance information to client: '" << pranesimas << "'\n"; // DEBUG
+
+    }
+
+};
+class taupyklėsEkr{
+public:
+
+    taupyklėsEkr(){};
+
+    void perziuretiLikuti(const Vaikas& vaikas, int klientoSoketas) {
+        std::string pranesimas;
+        std::string vaikoDir = "./vaikai/" + vaikas.getId();
+        std::string taupyklėsFailas = vaikoDir + "/taupyklė.txt";
+
+        if (!std::filesystem::exists(taupyklėsFailas)) {
+            pranesimas = "Taupyklės failas nerastas.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        std::ifstream taupyklėsFile(taupyklėsFailas);
+        if (!taupyklėsFile.is_open()) {
+            pranesimas = "Nepavyko atidaryti taupyklės failo.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+        std::string status, balansas;
+        if (std::getline(taupyklėsFile, status) && std::getline(taupyklėsFile, balansas)) {
+            pranesimas = "Taupyklės likutis: " + balansas + "\n";
+            if (status == "0") {
+                pranesimas += "Taupyklė užrakinta (negalima išimti pinigų).\n";
+            } else if (status == "1") {
+                pranesimas += "Taupyklė atrakinta (galima išimti pinigus).\n";
+            } else {
+                pranesimas += "Taupyklės būsena nežinoma.\n";
+            }
+        } else {
+            pranesimas = "Taupyklė tuščia arba failas tuščias.\n";
+        }
+        taupyklėsFile.close();
+        send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+    }
+
+    void idetiPinigus(const Vaikas vaikas, int klientoSoketas){
+        std::string pranesimas;
+        char buffer[4096];
+        if (send(klientoSoketas, "Įveskite sumą, kurią norite įdėti į taupyklę: ", 45, 0) < 0) {
+            perror("Klaida siunčiant duomenis");
+            return;
+        }
+        ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+        if (bytesRead <= 0) {
+            perror("Klaida gaunant duomenis");
+            return;
+        }
+        buffer[bytesRead] = '\0';
+        std::string suma(buffer);
+        double sumaDouble;
+        try {
+            sumaDouble = std::stod(suma);
+        } catch (...) {
+            send(klientoSoketas, "Neteisinga suma. Bandykite dar kartą.\n", 37, 0);
+            return;
+        }
+        if (sumaDouble <= 0) {
+            send(klientoSoketas, "Suma turi būti teigiama.\n", 26, 0);
+            return;
+        }
+        std::string vaikoDir = "./vaikai/" + vaikas.getId();
+        std::string taupyklėsFailas = vaikoDir + "/taupyklė.txt";
+        std::string status = "0", balansas = "0.00";
+        // Read current status and balance
+        if (std::filesystem::exists(taupyklėsFailas)) {
+            std::ifstream taupyklėsFile(taupyklėsFailas);
+            if (taupyklėsFile.is_open()) {
+                std::getline(taupyklėsFile, status);
+                std::getline(taupyklėsFile, balansas);
+                taupyklėsFile.close();
+            }
+        }
+        double balansasDouble = 0.0;
+        try { balansasDouble = std::stod(balansas); } catch (...) {}
+        balansasDouble += sumaDouble;
+        // Write back
+        std::ofstream taupyklėsFileOut(taupyklėsFailas, std::ios::trunc);
+        if (taupyklėsFileOut.is_open()) {
+            taupyklėsFileOut << status << "\n" << std::fixed << std::setprecision(2) << balansasDouble << "\n";
+            taupyklėsFileOut.close();
+            pranesimas = "Pinigai sėkmingai įdėti į taupyklę. Naujas likutis: " + std::to_string(balansasDouble) + "\n";
+        } else {
+            pranesimas = "Nepavyko atnaujinti taupyklės failo.\n";
+        }
+        send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+    }
+
+    void isimtiPinigus(const Vaikas vaikas, int klientoSoketas){
+        std::string pranesimas;
+        char buffer[4096];
+        if (send(klientoSoketas, "Įveskite sumą, kurią norite išimti iš taupyklės: ", 47, 0) < 0) {
+            perror("Klaida siunčiant duomenis");
+            return;
+        }
+        ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+        if (bytesRead <= 0) {
+            perror("Klaida gaunant duomenis");
+            return;
+        }
+        buffer[bytesRead] = '\0';
+        std::string suma(buffer);
+        double sumaDouble;
+        try {
+            sumaDouble = std::stod(suma);
+        } catch (...) {
+            send(klientoSoketas, "Neteisinga suma. Bandykite dar kartą.\n", 37, 0);
+            return;
+        }
+        if (sumaDouble <= 0) {
+            send(klientoSoketas, "Suma turi būti teigiama.\n", 26, 0);
+            return;
+        }
+        std::string vaikoDir = "./vaikai/" + vaikas.getId();
+        std::string taupyklėsFailas = vaikoDir + "/taupyklė.txt";
+        std::string status = "0", balansas = "0.00";
+        // Read current status and balance
+        if (std::filesystem::exists(taupyklėsFailas)) {
+            std::ifstream taupyklėsFile(taupyklėsFailas);
+            if (taupyklėsFile.is_open()) {
+                std::getline(taupyklėsFile, status);
+                std::getline(taupyklėsFile, balansas);
+                taupyklėsFile.close();
+            }
+        }
+        if (status == "0") {
+            send(klientoSoketas, "Taupyklė užrakinta. Negalite išimti pinigų.\n", 42, 0);
+            return;
+        }
+        double balansasDouble = 0.0;
+        try { balansasDouble = std::stod(balansas); } catch (...) {}
+        if (balansasDouble < sumaDouble) {
+            send(klientoSoketas, "Nepakanka lėšų taupyklėje.\n", 29, 0);
+            return;
+        }
+        balansasDouble -= sumaDouble;
+        // Write back
+        std::ofstream taupyklėsFileOut(taupyklėsFailas, std::ios::trunc);
+        if (taupyklėsFileOut.is_open()) {
+            taupyklėsFileOut << status << "\n" << std::fixed << std::setprecision(2) << balansasDouble << "\n";
+            taupyklėsFileOut.close();
+            pranesimas = "Pinigai sėkmingai išimti iš taupyklės. Naujas likutis: " + std::to_string(balansasDouble) + "\n";
+        } else {
+            pranesimas = "Nepavyko atnaujinti taupyklės failo.\n";
+        }
+        send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+    }
+
+    void interact(const Vaikas vaikas, int klientoSoketas) {
+        int vaikoPasirinkimas = 0;
+        bool atgal = false;
+        char buffer[4096];
+
+        while (!atgal) {
+            std::cout << "DEBUG: Displaying TAUPYKLES menu.\n"; // DEBUG
+        
+            vaikoPasirinkimas = 0; // Reset vaikoPasirinkimas each time to ensure menu is shown again
+
+            std::string pranesimas = (
+                "\n\n*** TAUPYKLĖS VALDYMAS ***\n\n"
+                "1. Įdėti pinigus\n"
+                "2. Išimti pinigus\n"
+                "3. Peržiūrėti taupyklės likutį\n"
+                "4. Atgal\n"
+                "Pasirinkite veiksmą (1-4): "
+            );
+            if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
+                perror("Klaida siunčiant duomenis");
+                break;
+            }
+            ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+            if (bytesRead <= 0) {
+                perror("Klaida gaunant duomenis");
+                break;
+            }
+            buffer[bytesRead] = '\0';
+            std::string atsakymas(buffer);
+            if (atsakymas.empty() || !std::all_of(atsakymas.begin(), atsakymas.end(), ::isdigit) ||
+                std::stoi(atsakymas) < 1 || std::stoi(atsakymas) > 4) {
+                send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
+                continue;
+            }
+            vaikoPasirinkimas = std::stoi(atsakymas);
+            switch (vaikoPasirinkimas) {
+                case 1:
+                    idetiPinigus(vaikas, klientoSoketas);
+                    break;
+                case 2:
+                    isimtiPinigus(vaikas, klientoSoketas);
+                    break;
+                case 3:
+                    perziuretiLikuti(vaikas, klientoSoketas);
+                    break;
+                case 4:
+                    send(klientoSoketas, "Grįžtama atgal į tėvų meniu.\n", 36, 0);
+                    atgal = true; // This will break out of the inner while loop
+                    std::cout << "DEBUG: Exiting VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                    break; // Break from switch to re-display parent menu
+                
+            }
+        }
+        std::cout << "DEBUG: Returned from VAIKO BANKO VALDYMAS menu. Looping back to TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+        return;
+    }
+
+};
+class vaikoEkranas {
+
+private:
+    Vaikas vaikas;
+    taupyklėsEkr taupyklesEkranas;
+    likutisEkr likutisEkranas;
+
+public:
+
+    vaikoEkranas(){};
+
+    void setVaikas(const Vaikas& vaikas) {
+        this->vaikas = vaikas;
+    }
+
+    void interact(int klientoSoketas) {
+        int vaikoPasirinkimas = 0;
+        bool atgal = false;
+        char buffer[4096];
+
+        while (!atgal) {
+            std::cout << "DEBUG: Displaying VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+        
+            vaikoPasirinkimas = 0; // Reset vaikoPasirinkimas each time to ensure menu is shown again
+
+            std::string pranesimas = (
+                "\n\n*** VAIKO BANKO VALDYMAS ***\n\n"
+                "1. Pervesti draugui\n"
+                "2. Likutis\n"
+                "3. Taupyklė\n"
+                "4. Atgal\n"
+                "Pasirinkite veiksmą (1-4): "
+            );
+            if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
+                perror("Klaida siunčiant duomenis");
+                std::cout << "DEBUG: Failed to send VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                break;
+            }
+            std::cout << "DEBUG: Sent VAIKO BANKO VALDYMAS menu. Waiting for input.\n"; // DEBUG
+            ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+            if (bytesRead <= 0) {
+                perror("Klaida gaunant duomenis");
+                std::cout << "DEBUG: Client disconnected or recv error in VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                break;
+            }
+            buffer[bytesRead] = '\0';
+            std::string atsakymas(buffer);
+            std::cout << "DEBUG: Received input for VAIKO BANKO VALDYMAS menu: '" << atsakymas << "'\n"; // DEBUG
+            if (atsakymas.empty() || !std::all_of(atsakymas.begin(), atsakymas.end(), ::isdigit) ||
+                std::stoi(atsakymas) < 1 || std::stoi(atsakymas) > 7) {
+                send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
+                std::cout << "DEBUG: Invalid input for VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                continue;
+            }
+            vaikoPasirinkimas = std::stoi(atsakymas);
+            std::cout << "DEBUG: Parsed VAIKO BANKO VALDYMAS menu choice: " << vaikoPasirinkimas << "\n"; // DEBUG
+            switch (vaikoPasirinkimas) {
+                case 1:
+                    // vaikoPervedimoEkr.interact(vaikas, klientoSoketas); // Uncomment and implement when ready
+                    send(klientoSoketas, "Funkcionalumas dar neįgyvendintas.\n", 36, 0);
+                    break;
+                case 2:
+                    likutisEkranas.interact(vaikas, klientoSoketas); // Uncomment and implement when ready
+            
+                    break;
+                case 3:
+                
+                    taupyklesEkranas.interact(vaikas, klientoSoketas); // Uncomment and implement when ready
+                    std::cout << "DEBUG: taupyklėsEkranas.interact() called.\n"; // DEBUG
+                    break;
+                case 4:
+                    send(klientoSoketas, "Grįžtama atgal į tėvų meniu.\n", 36, 0);
+                    atgal = true; // This will break out of the inner while loop
+                    std::cout << "DEBUG: Exiting VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                    break; // Break from switch to re-display parent menu
+                
+            }
+        }
+        std::cout << "DEBUG: Returned from VAIKO BANKO VALDYMAS menu. Looping back to TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+        return;
+    }
+};
+
+
+    
+
 class vaikuPrisijungimoEkr {
 private:
     Vaikas vaikas;
     authScreen auth;
+    vaikoEkranas vaikoEkr;
 
 public:
 
     vaikuPrisijungimoEkr(){};
 
     void interact(int klientoSoketas) {
-        std::cout << "Placeholder: Vaikų prisijungimo ekranas dar nėra įgyvendintas.\n";
-        std::string pranesimas = "Placeholder: Vaikų prisijungimo funkcionalumas dar kuriamas.\n";
-        send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+      int pasirinkimas = 0;
+
+        while (true) {
+            std::cout << "DEBUG: Displaying Vaiku PRISIJUNGIMAS menu.\n"; // DEBUG
+            pasirinkimas = 0; // Reset pasirinkimas each time to ensure menu is shown again
+            std::string pranesimas = (
+                "\n\n*** VAIKŲ PRISIJUNGIMAS ***\n\n"
+                "1. Prisijungti\n"
+                "2. Atgal\n\n"
+                "Pasirinkite veiksmą (1-2): "
+            );
+
+            char buffer[4096];
+            if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
+                perror("Klaida siunčiant duomenis");
+                std::cout << "DEBUG: Failed to send Vaiku PRISIJUNGIMAS menu.\n"; // DEBUG
+                continue;
+            }
+            std::cout << "DEBUG: Sent TĖVŲ PRISIJUNGIMAS menu. Waiting for input.\n"; // DEBUG
+            ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+            if (bytesRead <= 0) {
+                perror("Klaida gaunant duomenis");
+                std::cout << "DEBUG: Client disconnected or recv error in TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+                return; // Exit if client disconnected
+            }
+            buffer[bytesRead] = '\0';
+            std::string atsakymas(buffer);
+                       std::cout << "DEBUG: Received input for TĖVŲ PRISIJUNGIMAS menu: '" << atsakymas << "'\n"; // DEBUG
+
+            if (atsakymas.empty() || !std::all_of(atsakymas.begin(), atsakymas.end(), ::isdigit) || 
+                std::stoi(atsakymas) < 1 || std::stoi(atsakymas) > 2) {
+                send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
+                std::cout << "DEBUG: Invalid input for TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+                continue;
+            }
+
+            pasirinkimas = std::stoi(atsakymas);
+            std::cout << "DEBUG: Parsed vaiku PRISIJUNGIMAS menu choice: " << pasirinkimas << "\n"; // DEBUG
+
+            switch (pasirinkimas) {
+                case 1: {
+                    std::cout << "DEBUG: Entering authentication flow.\n"; // DEBUG
+                    bool isAuthenticated = auth.authVaikas(vaikas, klientoSoketas);
+                    // Removed redundant send here, as auth.authTevas already sends success/failure messages.
+                    if (!isAuthenticated) {
+                        send(klientoSoketas, "Bandykite dar kartą.\n", 20, 0);
+                        std::cout << "DEBUG: Authentication failed. Looping back to vaiku PRISIJUNGIMAS menu.\n"; // DEBUG
+                        continue;
+                    }
+                    std::cout << "DEBUG: Authentication successful. Entering VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                    // Show child menu only if authenticated
+                    vaikoEkr.setVaikas(vaikas);
+                    vaikoEkr.interact(klientoSoketas);
+                    std::cout << "DEBUG: Returned from vaikoEkranas.interact(). Looping back to TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+                    break; // Break from outer switch (case 1) to re-display parent menu
+                }
+                case 2: {
+                    send(klientoSoketas, "Grįžtama atgal į pagrindinį meniu.\n", 40, 0);
+                    std::cout << "DEBUG: Exiting TĖVŲ PRISIJUNGIMAS menu to main menu.\n"; // DEBUG
+                    return; // Exit to the previous menu (userInterface::pradzia)
+                }
+                default: {
+                    send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
+                    std::cout << "DEBUG: Invalid input for TĖVŲ PRISIJUNGIMAS menu (default case).\n"; // DEBUG
+                    break;
+                }
+            }
+        }
+
         return;
+
     }
 };
 
