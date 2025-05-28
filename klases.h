@@ -710,10 +710,7 @@ public:
         send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
     }
 };
-
 class veiklosEkr{};
-
-
 class authScreen {
 
     public:
@@ -891,266 +888,75 @@ class authScreen {
         }
 
 };
-
-class valdymoEkr{
-
-private:
-
-    Tevas tevas;
-    Vaikas vaikas;
-    mokejimoKorteleEkr mokejimoKortEkr;
-    pridejimoEkr vaikoPridejimoEkr;
-    pasalinimoEkr vaikoPasalinimoEkr;
-    perziurosEkr perziurosEkranas;
-    papildymoEkr papildymoEkranas;
-    taupyklesEkr taupyklesEkranas;
-
+class taupyklesEkr{
 public:
 
-    valdymoEkr(){};
+    taupyklesEkr(){};
 
-    void setTevas(const Tevas& tevas) {
-        this->tevas = tevas;
-    }
-
-    void interact(int klientoSoketas) {
-        int vaikoPasirinkimas = 0;
-        bool atgal = false;
-        char buffer[4096];
-
-        while (!atgal) {
-            std::cout << "DEBUG: Displaying VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
-        
-            vaikoPasirinkimas = 0; // Reset vaikoPasirinkimas each time to ensure menu is shown again
-
-            std::string pranesimas = (
-                "\n\n*** VAIKO BANKO VALDYMAS ***\n\n"
-                "1. Pridėti mokėjimo būdą\n"
-                "2. Pridėti vaiką\n"
-                "3. Pašalinti vaiką\n"
-                "4. Peržiūrėti vaikus\n"
-                "5. Papildyti sąskaitą\n"
-                "6. Užrakinti/atrakinti taupyklę\n"
-                "7. Atgal\n\n"
-                "Pasirinkite veiksmą (1-7): "
-            );
-            if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
-                perror("Klaida siunčiant duomenis");
-                std::cout << "DEBUG: Failed to send VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
-                break;
-            }
-            std::cout << "DEBUG: Sent VAIKO BANKO VALDYMAS menu. Waiting for input.\n"; // DEBUG
-            ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
-            if (bytesRead <= 0) {
-                perror("Klaida gaunant duomenis");
-                std::cout << "DEBUG: Client disconnected or recv error in VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
-                break;
-            }
-            buffer[bytesRead] = '\0';
-            std::string atsakymas(buffer);
-            std::cout << "DEBUG: Received input for VAIKO BANKO VALDYMAS menu: '" << atsakymas << "'\n"; // DEBUG
-            if (atsakymas.empty() || !std::all_of(atsakymas.begin(), atsakymas.end(), ::isdigit) ||
-                std::stoi(atsakymas) < 1 || std::stoi(atsakymas) > 7) {
-                send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
-                std::cout << "DEBUG: Invalid input for VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
-                continue;
-            }
-            vaikoPasirinkimas = std::stoi(atsakymas);
-            std::cout << "DEBUG: Parsed VAIKO BANKO VALDYMAS menu choice: " << vaikoPasirinkimas << "\n"; // DEBUG
-            switch (vaikoPasirinkimas) {
-                case 1:
-                    mokejimoKortEkr.interact(tevas, klientoSoketas);
-                    break;
-                case 2:
-                    vaikas = vaikoPridejimoEkr.interact(tevas, klientoSoketas);
-                    break;
-                case 3:
-                    vaikoPasalinimoEkr.interact(tevas, klientoSoketas);
-                    break;
-                case 4:
-                    perziurosEkranas.interact(tevas, klientoSoketas); // Uncomment and implement when ready
-                    break;
-                case 5:
-                    papildymoEkranas.interact(tevas, klientoSoketas); // Uncomment and implement when ready
-                    
-                    break;
-                case 6:
-                    // veiklosEkr.interact(klientoSoketas); // Uncomment and implement when ready
-                    send(klientoSoketas, "Funkcionalumas dar neįgyvendintas.\n", 36, 0);
-                    break;
-                case 7:
-                    send(klientoSoketas, "Grįžtama atgal į tėvų meniu.\n", 36, 0);
-                    atgal = true; // This will break out of the inner while loop
-                    std::cout << "DEBUG: Exiting VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
-                    break; // Break from switch to re-display parent menu
-            }
-        }
-        std::cout << "DEBUG: Returned from VAIKO BANKO VALDYMAS menu. Looping back to TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
-        return;
-    }
-};
-
-class tevuPrisijungimoEkr {
-private:
-
-    Tevas tevas;
-    Vaikas vaikas;
-    authScreen auth;
-    valdymoEkr valdymoEkranas;
-    
-
-public:
-
-    tevuPrisijungimoEkr(){};
-
-    void interact(int klientoSoketas) {
-        int pasirinkimas = 0;
-
-        while (true) {
-            std::cout << "DEBUG: Displaying TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
-            pasirinkimas = 0; // Reset pasirinkimas each time to ensure menu is shown again
-            std::string pranesimas = (
-                "\n\n*** TĖVŲ PRISIJUNGIMAS ***\n\n"
-                "1. Prisijungti\n"
-                "2. Registruotis\n"
-                "3. Atgal\n\n"
-                "Pasirinkite veiksmą (1-3): "
-            );
-
-            char buffer[4096];
-            if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
-                perror("Klaida siunčiant duomenis");
-                std::cout << "DEBUG: Failed to send TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
-                continue;
-            }
-            std::cout << "DEBUG: Sent TĖVŲ PRISIJUNGIMAS menu. Waiting for input.\n"; // DEBUG
-            ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
-            if (bytesRead <= 0) {
-                perror("Klaida gaunant duomenis");
-                std::cout << "DEBUG: Client disconnected or recv error in TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
-                return; // Exit if client disconnected
-            }
-            buffer[bytesRead] = '\0';
-            std::string atsakymas(buffer);
-            std::cout << "DEBUG: Received input for TĖVŲ PRISIJUNGIMAS menu: '" << atsakymas << "'\n"; // DEBUG
-
-            if (atsakymas.empty() || !std::all_of(atsakymas.begin(), atsakymas.end(), ::isdigit) || 
-                std::stoi(atsakymas) < 1 || std::stoi(atsakymas) > 3) {
-                send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
-                std::cout << "DEBUG: Invalid input for TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
-                continue;
-            }
-
-            pasirinkimas = std::stoi(atsakymas);
-            std::cout << "DEBUG: Parsed TĖVŲ PRISIJUNGIMAS menu choice: " << pasirinkimas << "\n"; // DEBUG
-
-            switch (pasirinkimas) {
-                case 1: {
-                    std::cout << "DEBUG: Entering authentication flow.\n"; // DEBUG
-                    bool isAuthenticated = auth.authTevas(tevas, klientoSoketas);
-                    // Removed redundant send here, as auth.authTevas already sends success/failure messages.
-                    if (!isAuthenticated) {
-                        send(klientoSoketas, "Bandykite dar kartą.\n", 20, 0);
-                        std::cout << "DEBUG: Authentication failed. Looping back to TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
-                        continue;
-                    }
-                    std::cout << "DEBUG: Authentication successful. Entering VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
-                    // Show child menu only if authenticated
-                    valdymoEkranas.setTevas(tevas);
-                    valdymoEkranas.interact(klientoSoketas);
-                    break; // Break from outer switch (case 1) to re-display parent menu
-                }
-                case 2: {
-                    std::cout << "DEBUG: Entering registration flow.\n"; // DEBUG
-                    tevas = auth.registerTevas(klientoSoketas);
-                    if (tevas.getId().empty()) {
-                        send(klientoSoketas, "Tėvo registracija nesėkminga. Bandykite dar kartą.\n", 40, 0);
-                        std::cout << "DEBUG: Registration failed. Looping back to TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
-                        continue;
-                    }
-                    send(klientoSoketas, "Tėvo registracija sėkminga.\n", 26, 0);
-                    std::cout << tevas.to_string() << std::endl;
-                    
-                    valdymoEkranas.setTevas(tevas); 
-                    valdymoEkranas.interact(klientoSoketas);
-                    break;
-                }
-                case 3: {
-                    send(klientoSoketas, "Grįžtama atgal į pagrindinį meniu.\n", 40, 0);
-                    std::cout << "DEBUG: Exiting TĖVŲ PRISIJUNGIMAS menu to main menu.\n"; // DEBUG
-                    return; // Exit to the previous menu (userInterface::pradzia)
-                }
-                default: {
-                    send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
-                    std::cout << "DEBUG: Invalid input for TĖVŲ PRISIJUNGIMAS menu (default case).\n"; // DEBUG
-                    break;
-                }
-            }
-        }
-
-        return;
-
-    }
-
-};
-
-class vaikoPervedimoEkr{};
-class likutisEkr{
-
-public:
-
-    likutisEkr(){};
-
-    void interact(const Vaikas& vaikas, int klientoSoketas) {
+    void uzrakintiAtrakinti(const Tevas tevas, int klientoSoketas) {
         std::string pranesimas;
+        char buffer[4096];
+        ssize_t bytesRead;
 
-        std::string vaikoDir = "./vaikai/" + vaikas.getId();
-        std::string bankoSasPath;
-
-        for (const auto& fileEntry : std::filesystem::directory_iterator(vaikoDir)) {
-            if (!fileEntry.is_regular_file()) {
-                continue; // Only process files
-            }
-
-            std::string filename = fileEntry.path().filename().string();
-            // Check if filename contains "LT" and ends with ".txt"
-            if (filename.find("LT") != std::string::npos && 
-                filename.length() > 4 && filename.rfind(".txt") == filename.length() - 4) {
-                
-                // Found a potential bank account file
-                bankoSasPath = fileEntry.path().string();
-                break; // Assuming one bank account file per child directory, take the first one found
-            }
+        pranesimas = "Įveskite vaiko ID: ";
+        if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
+            perror("Klaida siunčiant duomenis");
+            return;
         }
+        bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+        if (bytesRead <= 0) {
+            perror("Klaida gaunant duomenis");
+            return;
+        }
+        buffer[bytesRead] = '\0';
+        std::string vaikoID(buffer);
 
-        if (bankoSasPath.empty()) {
-            pranesimas = "Banko sąskaita nerasta.\n";
+        std::string vaikoDir = "./vaikai/" + vaikoID;
+        std::string taupyklėsFailas = vaikoDir + "/taupyklė.txt";
+
+        if (!std::filesystem::exists(taupyklėsFailas)) {
+            pranesimas = "Taupyklės failas nerastas.\n";
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
             return;
         }
-        std::ifstream saskaitaFile(bankoSasPath);
-        if (!saskaitaFile.is_open()) {
-            pranesimas = "Nepavyko atidaryti banko sąskaitos failo.\n";
+
+        std::ifstream taupyklėsFile(taupyklėsFailas);
+        if (!taupyklėsFile.is_open()) {
+            pranesimas = "Nepavyko atidaryti taupyklės failo.\n";
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
             return;
         }
-        std::string balansasValue;
-        if (std::getline(saskaitaFile, balansasValue) && !balansasValue.empty()) {
-            pranesimas = "Balansas: " + balansasValue + "\n";
+
+        std::string status, balansas;
+        if (std::getline(taupyklėsFile, status) && std::getline(taupyklėsFile, balansas)) {
+            taupyklėsFile.close();
+            if (status == "0") {
+                status = "1"; // Atrakinti
+                pranesimas = "Taupyklė buvo užrakinta. Dabar ji bus atrakinta.\n";
+            } else if (status == "1") {
+                status = "0"; // Užrakinti
+                pranesimas = "Taupyklė buvo atrakinta. Dabar ji bus užrakinta.\n";
+            } else {
+                pranesimas = "Taupyklės būsena nežinoma.\n";
+                send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+                return;
+            }
+            // Write back the new status
+            std::ofstream taupyklėsFileOut(taupyklėsFailas, std::ios::trunc);
+            if (taupyklėsFileOut.is_open()) {
+                taupyklėsFileOut << status << "\n" << balansas << "\n";
+                taupyklėsFileOut.close();
+                pranesimas += "Taupyklė sėkmingai atnaujinta.\n";
+            } else {
+                pranesimas = "Nepavyko atnaujinti taupyklės failo.\n";
+            }
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
         } else {
-            pranesimas = "Balansas: 0.00 (arba failas tuščias)\n"; // Default if file empty or balance not read
+            taupyklėsFile.close();
+            pranesimas = "Taupyklė tuščia arba failas tuščias.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
         }
-        saskaitaFile.close();
-        send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
-        std::cout << "DEBUG: Sent balance information to client: '" << pranesimas << "'\n"; // DEBUG
-
     }
-
-};
-class taupyklėsEkr{
-public:
-
-    taupyklėsEkr(){};
 
     void perziuretiLikuti(const Vaikas& vaikas, int klientoSoketas) {
         std::string pranesimas;
@@ -1356,11 +1162,264 @@ public:
     }
 
 };
+class valdymoEkr{
+
+private:
+
+    Tevas tevas;
+    Vaikas vaikas;
+    mokejimoKorteleEkr mokejimoKortEkr;
+    pridejimoEkr vaikoPridejimoEkr;
+    pasalinimoEkr vaikoPasalinimoEkr;
+    perziurosEkr perziurosEkranas;
+    papildymoEkr papildymoEkranas;
+    taupyklesEkr taupyklesEkranas;
+
+public:
+
+    valdymoEkr(){};
+
+    void setTevas(const Tevas& tevas) {
+        this->tevas = tevas;
+    }
+
+    void interact(int klientoSoketas) {
+        int vaikoPasirinkimas = 0;
+        bool atgal = false;
+        char buffer[4096];
+
+        while (!atgal) {
+            std::cout << "DEBUG: Displaying VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+        
+            vaikoPasirinkimas = 0; // Reset vaikoPasirinkimas each time to ensure menu is shown again
+
+            std::string pranesimas = (
+                "\n\n*** VAIKO BANKO VALDYMAS ***\n\n"
+                "1. Pridėti mokėjimo būdą\n"
+                "2. Pridėti vaiką\n"
+                "3. Pašalinti vaiką\n"
+                "4. Peržiūrėti vaikus\n"
+                "5. Papildyti sąskaitą\n"
+                "6. Užrakinti/atrakinti taupyklę\n"
+                "7. Atgal\n\n"
+                "Pasirinkite veiksmą (1-7): "
+            );
+            if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
+                perror("Klaida siunčiant duomenis");
+                std::cout << "DEBUG: Failed to send VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                break;
+            }
+            std::cout << "DEBUG: Sent VAIKO BANKO VALDYMAS menu. Waiting for input.\n"; // DEBUG
+            ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+            if (bytesRead <= 0) {
+                perror("Klaida gaunant duomenis");
+                std::cout << "DEBUG: Client disconnected or recv error in VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                break;
+            }
+            buffer[bytesRead] = '\0';
+            std::string atsakymas(buffer);
+            std::cout << "DEBUG: Received input for VAIKO BANKO VALDYMAS menu: '" << atsakymas << "'\n"; // DEBUG
+            if (atsakymas.empty() || !std::all_of(atsakymas.begin(), atsakymas.end(), ::isdigit) ||
+                std::stoi(atsakymas) < 1 || std::stoi(atsakymas) > 7) {
+                send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
+                std::cout << "DEBUG: Invalid input for VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                continue;
+            }
+            vaikoPasirinkimas = std::stoi(atsakymas);
+            std::cout << "DEBUG: Parsed VAIKO BANKO VALDYMAS menu choice: " << vaikoPasirinkimas << "\n"; // DEBUG
+            switch (vaikoPasirinkimas) {
+                case 1:
+                    mokejimoKortEkr.interact(tevas, klientoSoketas);
+                    break;
+                case 2:
+                    vaikas = vaikoPridejimoEkr.interact(tevas, klientoSoketas);
+                    break;
+                case 3:
+                    vaikoPasalinimoEkr.interact(tevas, klientoSoketas);
+                    break;
+                case 4:
+                    perziurosEkranas.interact(tevas, klientoSoketas); // Uncomment and implement when ready
+                    break;
+                case 5:
+                    papildymoEkranas.interact(tevas, klientoSoketas); // Uncomment and implement when ready
+                    
+                    break;
+                case 6:
+                    taupyklesEkranas.uzrakintiAtrakinti(tevas, klientoSoketas); // Uncomment and implement when ready
+                    send(klientoSoketas, "Funkcionalumas dar neįgyvendintas.\n", 36, 0);
+                    break;
+                case 7:
+                    send(klientoSoketas, "Grįžtama atgal į tėvų meniu.\n", 36, 0);
+                    atgal = true; // This will break out of the inner while loop
+                    std::cout << "DEBUG: Exiting VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                    break; // Break from switch to re-display parent menu
+            }
+        }
+        std::cout << "DEBUG: Returned from VAIKO BANKO VALDYMAS menu. Looping back to TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+        return;
+    }
+};
+class tevuPrisijungimoEkr {
+private:
+
+    Tevas tevas;
+    Vaikas vaikas;
+    authScreen auth;
+    valdymoEkr valdymoEkranas;
+    
+
+public:
+
+    tevuPrisijungimoEkr(){};
+
+    void interact(int klientoSoketas) {
+        int pasirinkimas = 0;
+
+        while (true) {
+            std::cout << "DEBUG: Displaying TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+            pasirinkimas = 0; // Reset pasirinkimas each time to ensure menu is shown again
+            std::string pranesimas = (
+                "\n\n*** TĖVŲ PRISIJUNGIMAS ***\n\n"
+                "1. Prisijungti\n"
+                "2. Registruotis\n"
+                "3. Atgal\n\n"
+                "Pasirinkite veiksmą (1-3): "
+            );
+
+            char buffer[4096];
+            if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
+                perror("Klaida siunčiant duomenis");
+                std::cout << "DEBUG: Failed to send TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+                continue;
+            }
+            std::cout << "DEBUG: Sent TĖVŲ PRISIJUNGIMAS menu. Waiting for input.\n"; // DEBUG
+            ssize_t bytesRead = recv(klientoSoketas, buffer, sizeof(buffer) - 1, 0);
+            if (bytesRead <= 0) {
+                perror("Klaida gaunant duomenis");
+                std::cout << "DEBUG: Client disconnected or recv error in TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+                return; // Exit if client disconnected
+            }
+            buffer[bytesRead] = '\0';
+            std::string atsakymas(buffer);
+            std::cout << "DEBUG: Received input for TĖVŲ PRISIJUNGIMAS menu: '" << atsakymas << "'\n"; // DEBUG
+
+            if (atsakymas.empty() || !std::all_of(atsakymas.begin(), atsakymas.end(), ::isdigit) || 
+                std::stoi(atsakymas) < 1 || std::stoi(atsakymas) > 3) {
+                send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
+                std::cout << "DEBUG: Invalid input for TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+                continue;
+            }
+
+            pasirinkimas = std::stoi(atsakymas);
+            std::cout << "DEBUG: Parsed TĖVŲ PRISIJUNGIMAS menu choice: " << pasirinkimas << "\n"; // DEBUG
+
+            switch (pasirinkimas) {
+                case 1: {
+                    std::cout << "DEBUG: Entering authentication flow.\n"; // DEBUG
+                    bool isAuthenticated = auth.authTevas(tevas, klientoSoketas);
+                    // Removed redundant send here, as auth.authTevas already sends success/failure messages.
+                    if (!isAuthenticated) {
+                        send(klientoSoketas, "Bandykite dar kartą.\n", 20, 0);
+                        std::cout << "DEBUG: Authentication failed. Looping back to TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+                        continue;
+                    }
+                    std::cout << "DEBUG: Authentication successful. Entering VAIKO BANKO VALDYMAS menu.\n"; // DEBUG
+                    // Show child menu only if authenticated
+                    valdymoEkranas.setTevas(tevas);
+                    valdymoEkranas.interact(klientoSoketas);
+                    break; // Break from outer switch (case 1) to re-display parent menu
+                }
+                case 2: {
+                    std::cout << "DEBUG: Entering registration flow.\n"; // DEBUG
+                    tevas = auth.registerTevas(klientoSoketas);
+                    if (tevas.getId().empty()) {
+                        send(klientoSoketas, "Tėvo registracija nesėkminga. Bandykite dar kartą.\n", 40, 0);
+                        std::cout << "DEBUG: Registration failed. Looping back to TĖVŲ PRISIJUNGIMAS menu.\n"; // DEBUG
+                        continue;
+                    }
+                    send(klientoSoketas, "Tėvo registracija sėkminga.\n", 26, 0);
+                    std::cout << tevas.to_string() << std::endl;
+                    
+                    valdymoEkranas.setTevas(tevas); 
+                    valdymoEkranas.interact(klientoSoketas);
+                    break;
+                }
+                case 3: {
+                    send(klientoSoketas, "Grįžtama atgal į pagrindinį meniu.\n", 40, 0);
+                    std::cout << "DEBUG: Exiting TĖVŲ PRISIJUNGIMAS menu to main menu.\n"; // DEBUG
+                    return; // Exit to the previous menu (userInterface::pradzia)
+                }
+                default: {
+                    send(klientoSoketas, "Neteisingas pasirinkimas. Bandykite dar kartą.\n", 42, 0);
+                    std::cout << "DEBUG: Invalid input for TĖVŲ PRISIJUNGIMAS menu (default case).\n"; // DEBUG
+                    break;
+                }
+            }
+        }
+
+        return;
+
+    }
+
+};
+class vaikoPervedimoEkr{};
+class likutisEkr{
+
+public:
+
+    likutisEkr(){};
+
+    void interact(const Vaikas& vaikas, int klientoSoketas) {
+        std::string pranesimas;
+
+        std::string vaikoDir = "./vaikai/" + vaikas.getId();
+        std::string bankoSasPath;
+
+        for (const auto& fileEntry : std::filesystem::directory_iterator(vaikoDir)) {
+            if (!fileEntry.is_regular_file()) {
+                continue; // Only process files
+            }
+
+            std::string filename = fileEntry.path().filename().string();
+            // Check if filename contains "LT" and ends with ".txt"
+            if (filename.find("LT") != std::string::npos && 
+                filename.length() > 4 && filename.rfind(".txt") == filename.length() - 4) {
+                
+                // Found a potential bank account file
+                bankoSasPath = fileEntry.path().string();
+                break; // Assuming one bank account file per child directory, take the first one found
+            }
+        }
+
+        if (bankoSasPath.empty()) {
+            pranesimas = "Banko sąskaita nerasta.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+        std::ifstream saskaitaFile(bankoSasPath);
+        if (!saskaitaFile.is_open()) {
+            pranesimas = "Nepavyko atidaryti banko sąskaitos failo.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+        std::string balansasValue;
+        if (std::getline(saskaitaFile, balansasValue) && !balansasValue.empty()) {
+            pranesimas = "Balansas: " + balansasValue + "\n";
+        } else {
+            pranesimas = "Balansas: 0.00 (arba failas tuščias)\n"; // Default if file empty or balance not read
+        }
+        saskaitaFile.close();
+        send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+        std::cout << "DEBUG: Sent balance information to client: '" << pranesimas << "'\n"; // DEBUG
+
+    }
+
+};
 class vaikoEkranas {
 
 private:
     Vaikas vaikas;
-    taupyklėsEkr taupyklesEkranas;
+    taupyklesEkr taupyklesEkranas;
     likutisEkr likutisEkranas;
 
 public:
@@ -1424,7 +1483,7 @@ public:
                 case 3:
                 
                     taupyklesEkranas.interact(vaikas, klientoSoketas); // Uncomment and implement when ready
-                    std::cout << "DEBUG: taupyklėsEkranas.interact() called.\n"; // DEBUG
+                    std::cout << "DEBUG: taupyklesEkranas.interact() called.\n"; // DEBUG
                     break;
                 case 4:
                     send(klientoSoketas, "Grįžtama atgal į tėvų meniu.\n", 36, 0);
@@ -1438,10 +1497,6 @@ public:
         return;
     }
 };
-
-
-    
-
 class vaikuPrisijungimoEkr {
 private:
     Vaikas vaikas;
@@ -1526,7 +1581,6 @@ public:
 
     }
 };
-
 class userInterface {
 private:
 
