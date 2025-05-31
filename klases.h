@@ -1219,11 +1219,14 @@ public:
         send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
     }
 
+    // Inside class taupyklesEkr:
+
     void isimtiPinigus(const Vaikas& vaikas, int klientoSoketas) { // Child action
         std::string pranesimas;
         char buffer[4096];
 
-        pranesimas = "Įveskite sumą, kurią norite išimti iš taupyklės: ";
+        // 1. Get amount to withdraw from client
+        pranesimas = "Įveskite sumą, kurią norite išimti iš taupyklės (bus pervesta į pagrindinę sąskaitą): ";
         if (send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0) < 0) {
             perror("Klaida siunčiant duomenis");
             return;
@@ -1250,57 +1253,148 @@ public:
             return;
         }
 
-        std::string taupyklesFailas = "./vaikai/" + vaikas.getId() + "/taupyklė.txt";
-        std::string status, balansasStr;
+        // 2. Access Piggy Bank (Source)
+        std::string vaikoDir = "./vaikai/" + vaikas.getId();
+        std::string taupyklesFailas = vaikoDir + "/taupyklė.txt";
+        std::string esamasTaupyklesStatus, esamasTaupyklesBalansasStr;
 
         if (!std::filesystem::exists(taupyklesFailas)) {
-             pranesimas = "Klaida: Taupyklės failas nerastas. Negalima išimti pinigų.\n";
-             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
-             logActivity(vaikas.getId(), "Bandyta išimti " + sumaStr + " iš neegzistuojančios taupyklės.");
-             return;
+            pranesimas = "Klaida: Taupyklės failas nerastas. Negalima išimti pinigų.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            logActivity(vaikas.getId(), "Bandyta išimti " + sumaStr + " iš neegzistuojančios taupyklės.");
+            return;
         }
 
         std::ifstream taupyklesFileIn(taupyklesFailas);
-        if (!taupyklesFileIn.is_open() || !std::getline(taupyklesFileIn, status) || !std::getline(taupyklesFileIn, balansasStr)) {
-            if(taupyklesFileIn.is_open()) taupyklesFileIn.close();
+        if (!taupyklesFileIn.is_open() || 
+            !std::getline(taupyklesFileIn, esamasTaupyklesStatus) || 
+            !std::getline(taupyklesFileIn, esamasTaupyklesBalansasStr)) {
+            if (taupyklesFileIn.is_open()) taupyklesFileIn.close();
             pranesimas = "Klaida: Nepavyko nuskaityti taupyklės duomenų.\n";
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
-            logActivity(vaikas.getId(), "Klaida skaitant taupyklės duomenis bandant išimti " + sumaStr);
+            logActivity(vaikas.getId(), "Klaida skaitant taupyklės duomenis bandant išimti " + sumaStr + ".");
             return;
         }
         taupyklesFileIn.close();
 
-        if (status == "0") {
+        if (esamasTaupyklesStatus == "0") {
             pranesimas = "Klaida: Taupyklė UŽRAKINTA. Negalima išimti pinigų.\n";
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
             logActivity(vaikas.getId(), "Bandyta išimti " + sumaStr + " iš UŽRAKINTOS taupyklės.");
             return;
         }
 
-        double balansasDouble = 0.0;
-        try { balansasDouble = std::stod(balansasStr); } catch (const std::exception&) { /* Should not happen if read was fine */ }
-
-        if (balansasDouble < sumaDouble) {
-            pranesimas = "Klaida: Nepakanka lėšų taupyklėje.\n";
+        double esamasTaupyklesBalansasDouble = 0.0;
+        try { 
+            esamasTaupyklesBalansasDouble = std::stod(esamasTaupyklesBalansasStr); 
+        } catch (const std::exception&) {
+            pranesimas = "Klaida: Netinkamas taupyklės balanso formatas faile.\n";
             send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
-            logActivity(vaikas.getId(), "Nepakako lėšų (" + balansasStr + ") bandant išimti " + sumaStr + " iš taupyklės.");
+            logActivity(vaikas.getId(), "Klaida konvertuojant taupyklės balansą (" + esamasTaupyklesBalansasStr + ") bandant išimti " + sumaStr + ".");
             return;
         }
 
-        balansasDouble -= sumaDouble;
-
-        std::ofstream taupyklesFileOut(taupyklesFailas, std::ios::trunc);
-        if (taupyklesFileOut.is_open()) {
-            taupyklesFileOut << status << "\n" << std::fixed << std::setprecision(2) << balansasDouble << "\n";
-            taupyklesFileOut.close();
-            std::ostringstream oss;
-            oss << std::fixed << std::setprecision(2) << "Pinigai sėkmingai išimti. Naujas taupyklės likutis: " << balansasDouble << "\n";
-            pranesimas = oss.str();
-            logActivity(vaikas.getId(), "Išimta " + sumaStr + " iš taupyklės. Naujas likutis: " + std::to_string(balansasDouble));
-        } else {
-            pranesimas = "Klaida: Nepavyko atnaujinti taupyklės failo.\n";
-            logActivity(vaikas.getId(), "Klaida atnaujinant taupyklės failą išimant " + sumaStr);
+        if (esamasTaupyklesBalansasDouble < sumaDouble) {
+            pranesimas = "Klaida: Nepakanka lėšų taupyklėje (" + std::to_string(esamasTaupyklesBalansasDouble) + 
+                         ") norint išimti " + sumaStr + ".\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            logActivity(vaikas.getId(), "Nepakako lėšų (" + esamasTaupyklesBalansasStr + ") bandant išimti " + sumaStr + " iš taupyklės.");
+            return;
         }
+
+        // 3. Debit Piggy Bank (Source)
+        double naujasTaupyklesBalansas = esamasTaupyklesBalansasDouble - sumaDouble;
+        std::ofstream taupyklesFileOut(taupyklesFailas, std::ios::trunc);
+        if (!taupyklesFileOut.is_open()) {
+            pranesimas = "Klaida: Kritinė klaida atnaujinant taupyklės balansą. Operacija nutraukta.\n";
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            logActivity(vaikas.getId(), "KRITINĖ KLAIDA išimant iš taupyklės: nepavyko atidaryti taupyklės failo rašymui.");
+            return;
+        }
+        taupyklesFileOut << esamasTaupyklesStatus << "\n" << std::fixed << std::setprecision(2) << naujasTaupyklesBalansas << "\n";
+        taupyklesFileOut.close();
+
+        // 4. Credit Main Bank Account (Destination)
+        std::string bankoSasPath;
+        std::string bankoBalansasStr;
+        bool bankoSasRasta = false;
+        double bankoBalansasDouble = 0.0;
+
+        // Find main bank account file
+        if (std::filesystem::exists(vaikoDir) && std::filesystem::is_directory(vaikoDir)) {
+            for (const auto& fileEntry : std::filesystem::directory_iterator(vaikoDir)) {
+                if (fileEntry.is_regular_file()) {
+                    std::string filename = fileEntry.path().filename().string();
+                    if (filename.rfind(".txt") != std::string::npos && filename.length() > 4 && filename.substr(0, 2) == "LT") {
+                        bankoSasPath = fileEntry.path().string();
+                        std::ifstream sasFile(bankoSasPath);
+                        if (sasFile.is_open()) {
+                            std::getline(sasFile, bankoBalansasStr); // Read current balance
+                            sasFile.close();
+                            bankoSasRasta = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (!bankoSasRasta) {
+            pranesimas = "Klaida: KRITINĖ KLAIDA! Pinigai išimti iš taupyklės, bet Jūsų pagrindinė banko sąskaita nerasta. Susisiekite su administratoriumi!\n";
+            logActivity(vaikas.getId(), "KRITINĖ KLAIDA: Išimta " + sumaStr + " iš taupyklės, bet pagrindinė sąskaita nerasta. Taupyklės likutis dabar: " + std::to_string(naujasTaupyklesBalansas));
+            // Attempt to refund piggy bank
+            taupyklesFileOut.open(taupyklesFailas, std::ios::trunc); // Re-open piggy bank file
+            if(taupyklesFileOut.is_open()){
+                taupyklesFileOut << esamasTaupyklesStatus << "\n" << std::fixed << std::setprecision(2) << esamasTaupyklesBalansasDouble << "\n"; // Write back original balance
+                taupyklesFileOut.close();
+                pranesimas += "Atliktas bandymas grąžinti lėšas į taupyklę. Patikrinkite likutį.\n";
+                logActivity(vaikas.getId(), "KRITINĖS KLAIDOS TAISYMAS: Bandyta grąžinti " + sumaStr + " į taupyklę. Likutis turėtų būti: " + std::to_string(esamasTaupyklesBalansasDouble));
+            } else {
+                pranesimas += "Nepavyko automatiškai grąžinti lėšų į taupyklę. BŪTINA RANKINĖ INTERVENCIJA!\n";
+                logActivity(vaikas.getId(), "KRITINĖS KLAIDOS TAISYMAS: NEPAVYKO grąžinti " + sumaStr + " į taupyklę.");
+            }
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+
+        try {
+            bankoBalansasDouble = std::stod(bankoBalansasStr.empty() ? "0.00" : bankoBalansasStr);
+        } catch (const std::exception&) {
+            // If conversion fails, assume 0. This is risky but better than crashing.
+            bankoBalansasDouble = 0.00;
+             logActivity(vaikas.getId(), "Perspėjimas: Skaitant pagrindinės sąskaitos balansą įvyko konvertavimo klaida (" + bankoBalansasStr + "), naudojamas 0.00.");
+        }
+
+        double naujasBankoBalansas = bankoBalansasDouble + sumaDouble;
+        std::ofstream bankoSasFileOut(bankoSasPath, std::ios::trunc);
+        if (!bankoSasFileOut.is_open()) {
+            pranesimas = "Klaida: KRITINĖ KLAIDA! Pinigai išimti iš taupyklės, bet nepavyko įskaityti į pagrindinę sąskaitą. Susisiekite su administratoriumi!\n";
+            logActivity(vaikas.getId(), "KRITINĖ KLAIDA: Išimta " + sumaStr + " iš taupyklės, bet nepavyko atnaujinti pagrindinės sąskaitos failo. Taupyklės likutis dabar: " + std::to_string(naujasTaupyklesBalansas));
+            // Attempt to refund piggy bank
+            taupyklesFileOut.open(taupyklesFailas, std::ios::trunc); // Re-open piggy bank file
+            if(taupyklesFileOut.is_open()){
+                taupyklesFileOut << esamasTaupyklesStatus << "\n" << std::fixed << std::setprecision(2) << esamasTaupyklesBalansasDouble << "\n"; // Write back original balance
+                taupyklesFileOut.close();
+                pranesimas += "Atliktas bandymas grąžinti lėšas į taupyklę. Patikrinkite likutį.\n";
+                logActivity(vaikas.getId(), "KRITINĖS KLAIDOS TAISYMAS: Bandyta grąžinti " + sumaStr + " į taupyklę. Likutis turėtų būti: " + std::to_string(esamasTaupyklesBalansasDouble));
+            } else {
+                pranesimas += "Nepavyko automatiškai grąžinti lėšų į taupyklę. BŪTINA RANKINĖ INTERVENCIJA!\n";
+                 logActivity(vaikas.getId(), "KRITINĖS KLAIDOS TAISYMAS: NEPAVYKO grąžinti " + sumaStr + " į taupyklę.");
+            }
+            send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+            return;
+        }
+        bankoSasFileOut << std::fixed << std::setprecision(2) << naujasBankoBalansas << "\n";
+        bankoSasFileOut.close();
+
+        // 5. Success
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(2)
+            << "Pinigai sėkmingai pervesti iš taupyklės į pagrindinę sąskaitą.\n"
+            << "Taupyklės naujas likutis: " << naujasTaupyklesBalansas << "\n"
+            << "Pagrindinės sąskaitos naujas likutis: " << naujasBankoBalansas << "\n";
+        pranesimas = oss.str();
+        logActivity(vaikas.getId(), "Pervesta " + sumaStr + " iš taupyklės į pagrindinę sąskaitą. Taupyklės likutis: " + std::to_string(naujasTaupyklesBalansas) + ". Pagrindinės sąskaitos likutis: " + std::to_string(naujasBankoBalansas) + ".");
         send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
     }
 
