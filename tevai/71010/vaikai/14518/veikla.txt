@@ -1,0 +1,8 @@
+2025-05-31 20:18:00 Peržiūrėtas sąskaitos likutis: 100.00
+2025-05-31 20:18:22 Pervesta 50 iš pagrindinės sąskaitos į taupyklę. Taupyklės likutis: 50.000000. Pagrindinės sąskaitos likutis: 50.000000.
+2025-05-31 20:18:34 Bandyta išimti 25 iš UŽRAKINTOS taupyklės.
+2025-05-31 20:18:47 Peržiūrėtas taupyklės likutis (50.00). Būsena: UŽRAKINTA
+2025-05-31 20:19:38 Peržiūrėtas sąskaitos likutis: 50.00
+2025-05-31 20:20:02 Pervesta 10.000000 gavėjui 77188. Naujas balansas: 40.000000
+2025-05-31 20:21:31 Tėvas (71010) ATRAKINO taupyklę.
+2025-05-31 20:22:04 Pervesta 20 iš taupyklės į pagrindinę sąskaitą. Taupyklės likutis: 30.000000. Pagrindinės sąskaitos likutis: 60.000000.

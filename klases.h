@@ -41,6 +41,8 @@ public:
         return "Vardas ir pavardė: " + this->vardas + " " + this->pavarde + "\n" +
                "Prisijungimo ID: " + this->id + "\n";
     }
+
+    
 };
 
 // Inherit from Tevas
@@ -204,6 +206,8 @@ public:
         pranesimas = "Vaiko prisijungimo ID: " + vaikas.getId() + "\n" +
                      "Vaiko banko sąskaita: " + vaikas.getBankoSas() + "\n";
         send(klientoSoketas, pranesimas.c_str(), pranesimas.size(), 0);
+
+        
         return vaikas;
     }
 };
@@ -918,7 +922,9 @@ public:
 };
 
 class taupyklesEkr {
-private:
+public:
+    taupyklesEkr() {}
+    
     void logActivity(const std::string& vaikoId, const std::string& activityMessage) {
         std::string vaikoGlobalDir = "./vaikai/" + vaikoId;
         std::string asmDuomPath = vaikoGlobalDir + "/asm_duom.txt";
@@ -954,8 +960,7 @@ private:
         }
     }
 
-public:
-    taupyklesEkr() {}
+    
 
     void uzrakintiAtrakinti(const Tevas& tevas, int klientoSoketas) { // Parent action
         std::string pranesimas;
